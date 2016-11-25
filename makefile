@@ -1,8 +1,8 @@
 build: main.go
 	go build
 
-run:
-	. ./.env && go run main.go
+run: build
+	. ./.env && ./redminebot
 
 DEPLOY_TO = "/home/redmine/telegrambot"
 
