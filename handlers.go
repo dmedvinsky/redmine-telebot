@@ -13,32 +13,40 @@ import (
 var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
 var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
 
-func connect(message telebot.Message) string {
+func connect(message telebot.Message) {
+	var msg string
 	parts := strings.Fields(message.Text)
 	if len(parts) == 2 {
 		err := Redis.Set(senderKey(message.Sender.ID), parts[1], 0).Err()
 		if err != nil {
 			log.Println(err)
-			return "Error"
+			msg = "Error"
 		}
-		return "Connected. Now you can use the bot."
+		msg = "Connected. Now you can use the bot."
 	}
-	return "Please use `/connect my_redmine_token`"
+	msg = "Please use `/connect my_redmine_token`"
+	Bot.SendMessage(message.Chat, msg, nil)
 }
 
-func disconnect(message telebot.Message) string {
+func disconnect(message telebot.Message) {
+	var msg string
 	err := Redis.Del(senderKey(message.Sender.ID)).Err()
 	if err != nil {
 		log.Println(err)
-		return "Error"
+		msg = "Error"
 	}
-	return "Disconnected. Your Redmine access token has been deleted."
+	msg = "Disconnected. Your Redmine access token has been deleted."
+	Bot.SendMessage(message.Chat, msg, nil)
 }
 
-func getIssueIds(message telebot.Message) (ids []int) {
-	ids = append(ids, getIds(message.Text, issueIdRe)...)
-	ids = append(ids, getIds(message.Text, issueLinkRe)...)
-	return
+func parseMessage(message telebot.Message, rmApi redmine.Session) {
+	var issueIds []int
+	issueIds = append(issueIds, getIds(message.Text, issueIdRe)...)
+	issueIds = append(issueIds, getIds(message.Text, issueLinkRe)...)
+	for i := range issueIds {
+		msg := getIssueData(rmApi, issueIds[i])
+		Bot.SendMessage(message.Chat, msg, nil)
+	}
 }
 
 func getIssueData(rmApi redmine.Session, id int) (msg string) {

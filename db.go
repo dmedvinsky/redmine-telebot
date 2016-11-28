@@ -10,9 +10,9 @@ var Redis *redis.Client
 
 func connectDB() {
 	Redis = redis.NewClient(&redis.Options{
-		Network:  Config.RedisNetwork,
-		Addr:     Config.RedisAddr,
-		DB:       Config.RedisDB,
+		Network: Config.RedisNetwork,
+		Addr:    Config.RedisAddr,
+		DB:      Config.RedisDB,
 	})
 }
 

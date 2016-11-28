@@ -8,31 +8,24 @@ import (
 	"github.com/tucnak/telebot"
 )
 
-
 func main() {
 	loadConfig()
 	log.Println("Using config: ", Config)
 	connectDB()
+	mkBot()
 
-	bot := mkBot()
 	messages := make(chan telebot.Message, 100)
-	bot.Listen(messages, 1*time.Second)
+	Bot.Listen(messages, 1*time.Second)
 
 	for message := range messages {
+		rmApi := mkRedmine(message.Sender.ID)
 		switch {
 		case strings.HasPrefix(message.Text, "/connect"):
-			msg := connect(message)
-			bot.SendMessage(message.Chat, msg, nil)
+			connect(message)
 		case strings.HasPrefix(message.Text, "/disconnect"):
-			msg := disconnect(message)
-			bot.SendMessage(message.Chat, msg, nil)
+			disconnect(message)
 		default:
-			rmApi := mkRedmine(message.Sender.ID)
-			issueIds := getIssueIds(message)
-			for i := range issueIds {
-				msg := getIssueData(rmApi, issueIds[i])
-				bot.SendMessage(message.Chat, msg, nil)
-			}
+			parseMessage(message, rmApi)
 		}
 	}
 }
