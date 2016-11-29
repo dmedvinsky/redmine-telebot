@@ -10,9 +10,6 @@ import (
 	"github.com/tucnak/telebot"
 )
 
-var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
-var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
-
 func connect(message telebot.Message) {
 	var msg string
 	parts := strings.Fields(message.Text)
@@ -40,6 +37,8 @@ func disconnect(message telebot.Message) {
 }
 
 func parseMessage(message telebot.Message, rmApi redmine.Session) {
+	var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
+	var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
 	var issueIds []int
 	issueIds = append(issueIds, getIds(message.Text, issueIdRe)...)
 	issueIds = append(issueIds, getIds(message.Text, issueLinkRe)...)
