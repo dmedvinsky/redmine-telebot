@@ -6,50 +6,50 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jason0x43/go-redmine"
+	"github.com/mattn/go-redmine"
 	"github.com/tucnak/telebot"
 )
 
-func connect(message telebot.Message) {
+func connect(message telebot.Message, user User) {
 	var msg string
+	msg = "Please use `/connect my_redmine_token`"
 	parts := strings.Fields(message.Text)
 	if len(parts) == 2 {
-		err := Redis.Set(senderKey(message.Sender.ID), parts[1], 0).Err()
-		if err != nil {
-			log.Println(err)
+		user.RedmineToken = parts[1]
+		if user.save() {
+			msg = "Connected. Now you can use the bot."
+		} else {
 			msg = "Error"
 		}
-		msg = "Connected. Now you can use the bot."
 	}
-	msg = "Please use `/connect my_redmine_token`"
 	Bot.SendMessage(message.Chat, msg, nil)
 }
 
-func disconnect(message telebot.Message) {
+func disconnect(message telebot.Message, user User) {
 	var msg string
-	err := Redis.Del(senderKey(message.Sender.ID)).Err()
-	if err != nil {
-		log.Println(err)
+	if user.delete() {
+		msg = "Disconnected. Your Redmine access token has been deleted."
+	} else {
 		msg = "Error"
 	}
-	msg = "Disconnected. Your Redmine access token has been deleted."
 	Bot.SendMessage(message.Chat, msg, nil)
 }
 
-func parseMessage(message telebot.Message, rmApi redmine.Session) {
+func parseMessage(message telebot.Message, user User) {
 	var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
 	var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
 	var issueIds []int
 	issueIds = append(issueIds, getIds(message.Text, issueIdRe)...)
 	issueIds = append(issueIds, getIds(message.Text, issueLinkRe)...)
 	for i := range issueIds {
-		msg := getIssueData(rmApi, issueIds[i])
+		msg := getIssueData(user, issueIds[i])
 		Bot.SendMessage(message.Chat, msg, nil)
 	}
 }
 
-func getIssueData(rmApi redmine.Session, id int) (msg string) {
-	issue, err := rmApi.GetIssue(id)
+func getIssueData(user User, id int) (msg string) {
+	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
+	issue, err := rmApi.Issue(id)
 	if err != nil {
 		log.Println(err)
 		msg = fmt.Sprintf("Issue #%d: error accessing", id)

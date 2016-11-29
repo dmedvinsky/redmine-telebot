@@ -18,14 +18,14 @@ func main() {
 	Bot.Listen(messages, 1*time.Second)
 
 	for message := range messages {
-		rmApi := mkRedmine(message.Sender.ID)
+		user := getUser(message.Sender.ID)
 		switch {
 		case strings.HasPrefix(message.Text, "/connect"):
-			connect(message)
+			connect(message, user)
 		case strings.HasPrefix(message.Text, "/disconnect"):
-			disconnect(message)
+			disconnect(message, user)
 		default:
-			parseMessage(message, rmApi)
+			parseMessage(message, user)
 		}
 	}
 }
