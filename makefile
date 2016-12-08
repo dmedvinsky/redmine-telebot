@@ -1,4 +1,5 @@
 build: main.go
+	go fmt
 	go build
 
 run: build
