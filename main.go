@@ -42,6 +42,8 @@ func main() {
 				track3(message, user)
 			case "track.4":
 				track4(message, user)
+			case "track.5":
+				track5(message, user)
 			default:
 				parseMessage(message, user)
 			}

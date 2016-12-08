@@ -46,6 +46,23 @@ func projectsKeyboard(items []redmine.Project) (keyboard [][]string) {
 	return
 }
 
+func issuesKeyboard(items []redmine.Issue) (keyboard [][]string) {
+	row := [1]string{"No Issue"}
+	keyboard = append(keyboard, row[:])
+	for i := 0; i < len(items); i += 2 {
+		if i > 100 {
+			break
+		}
+		var row [2]string
+		row[0] = fmt.Sprintf("%d: %s", items[i].Id, items[i].Subject)
+		if i+1 < len(items) {
+			row[1] = fmt.Sprintf("%d: %s", items[i+1].Id, items[i+1].Subject)
+		}
+		keyboard = append(keyboard, row[:])
+	}
+	return
+}
+
 func activitiesKeyboard(items []redmine.TimeEntryActivity) (keyboard [][]string) {
 	for i := 0; i < len(items); i += 2 {
 		if i > 20 {

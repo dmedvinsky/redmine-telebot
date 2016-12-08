@@ -76,6 +76,36 @@ func track1(message telebot.Message, user User) {
 		return
 	}
 	user.SetState("project_id", projectId)
+	filter := redmine.IssueFilter{
+		AssignedToId: "me",
+		ProjectId:    strconv.Itoa(projectId),
+		StatusId:     "open",
+	}
+	issues, err := rmApi.IssuesByFilter(&filter)
+	if err != nil {
+		log.Println(err)
+	}
+	keyboard := issuesKeyboard(issues)
+	Bot.SendMessage(message.Chat, "Please select issue.",
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				ForceReply:      true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
+				CustomKeyboard:  keyboard,
+			},
+		})
+	user.SetState("state_id", "track.2")
+}
+
+func track2(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
+	if message.Text != "No Issue" {
+		issueId := getIdFromKeyboard(message.Text)
+		user.SetState("issue_id", issueId)
+	}
 	activities, err := rmApi.TimeEntryActivites()
 	if err != nil {
 		log.Println(err)
@@ -91,37 +121,34 @@ func track1(message telebot.Message, user User) {
 				CustomKeyboard:  keyboard,
 			},
 		})
-	user.SetState("state_id", "track.2")
-}
-
-func track2(message telebot.Message, user User) {
-	Bot.SendChatAction(message.Chat, telebot.Typing)
-	activityId := getIdFromKeyboard(message.Text)
-	if activityId == 0 {
-		track1(message, user)
-		return
-	}
-	user.SetState("activity_id", activityId)
-	Bot.SendMessage(message.Chat, "Please enter spent hours.", nil)
 	user.SetState("state_id", "track.3")
 }
 
 func track3(message telebot.Message, user User) {
 	Bot.SendChatAction(message.Chat, telebot.Typing)
-	hours, err := strconv.ParseFloat(message.Text, 64)
-	if err != nil {
-		log.Println(err)
-	}
-	if hours == 0 {
-		track2(message, user)
+	activityId := getIdFromKeyboard(message.Text)
+	if activityId == 0 {
+		track0(message, user)
 		return
 	}
-	user.SetState("hours", hours)
-	Bot.SendMessage(message.Chat, "Please enter comment.", nil)
+	user.SetState("activity_id", activityId)
+	Bot.SendMessage(message.Chat, "Please enter spent hours.", nil)
 	user.SetState("state_id", "track.4")
 }
 
 func track4(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	hours, _ := strconv.ParseFloat(message.Text, 64)
+	if hours == 0 {
+		track0(message, user)
+		return
+	}
+	user.SetState("hours", hours)
+	Bot.SendMessage(message.Chat, "Please enter comment.", nil)
+	user.SetState("state_id", "track.5")
+}
+
+func track5(message telebot.Message, user User) {
 	Bot.SendChatAction(message.Chat, telebot.Typing)
 	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
 	var te redmine.TimeEntry
@@ -129,6 +156,10 @@ func track4(message telebot.Message, user User) {
 	te.ActivityId = user.ChatState["activity_id"].(int)
 	te.Hours = float32(user.ChatState["hours"].(float64))
 	te.Comments = message.Text
+	issueId, ok := user.ChatState["issue_id"]
+	if ok {
+		te.IssueId = issueId.(int)
+	}
 	_, err := rmApi.CreateTimeEntry(te)
 	if err != nil {
 		log.Println(err)
