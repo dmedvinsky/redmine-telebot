@@ -13,7 +13,12 @@ import (
 
 func abort(message telebot.Message, user User) {
 	user.ClearState()
-	Bot.SendMessage(message.Chat, "Cancelled current operation.", nil)
+	Bot.SendMessage(message.Chat, "Cancelled current operation.",
+		&telebot.SendOptions{
+			ReplyMarkup: telebot.ReplyMarkup{
+				HideCustomKeyboard: true,
+			},
+		})
 }
 
 func connect(message telebot.Message, user User) {
