@@ -22,6 +22,10 @@ func main() {
 	for message := range messages {
 		user := GetUser(message.Sender.ID)
 		switch {
+		case strings.HasPrefix(message.Text, "/abort"):
+			fallthrough
+		case strings.HasPrefix(message.Text, "/cancel"):
+			abort(message, user)
 		case strings.HasPrefix(message.Text, "/connect"):
 			connect(message, user)
 		case strings.HasPrefix(message.Text, "/disconnect"):

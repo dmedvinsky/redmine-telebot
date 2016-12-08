@@ -11,6 +11,11 @@ import (
 	"github.com/tucnak/telebot"
 )
 
+func abort(message telebot.Message, user User) {
+	user.ClearState()
+	Bot.SendMessage(message.Chat, "Cancelled current operation.", nil)
+}
+
 func connect(message telebot.Message, user User) {
 	var msg string
 	msg = "Please use `/connect my_redmine_token`"
