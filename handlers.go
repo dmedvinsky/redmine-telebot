@@ -132,7 +132,13 @@ func track3(message telebot.Message, user User) {
 		return
 	}
 	user.SetState("activity_id", activityId)
-	Bot.SendMessage(message.Chat, "Please enter spent hours.", nil)
+	Bot.SendMessage(message.Chat, "Please enter spent hours.",
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				HideCustomKeyboard: true,
+			},
+		})
 	user.SetState("state_id", "track.4")
 }
 
@@ -144,7 +150,13 @@ func track4(message telebot.Message, user User) {
 		return
 	}
 	user.SetState("hours", hours)
-	Bot.SendMessage(message.Chat, "Please enter comment.", nil)
+	Bot.SendMessage(message.Chat, "Please enter comment.",
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				HideCustomKeyboard: true,
+			},
+		})
 	user.SetState("state_id", "track.5")
 }
 
@@ -161,12 +173,20 @@ func track5(message telebot.Message, user User) {
 		te.IssueId = issueId.(int)
 	}
 	_, err := rmApi.CreateTimeEntry(te)
+	var msg string
 	if err != nil {
 		log.Println(err)
-		Bot.SendMessage(message.Chat, "Fail!", nil)
+		msg = "Fail!"
 	} else {
-		Bot.SendMessage(message.Chat, "Successfully logged the [wasted] time.", nil)
+		msg = "Successfully logged the [wasted] time."
 	}
+	Bot.SendMessage(message.Chat, msg,
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				HideCustomKeyboard: true,
+			},
+		})
 	user.ClearState()
 }
 
