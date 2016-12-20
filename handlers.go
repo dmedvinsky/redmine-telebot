@@ -246,7 +246,7 @@ func changeStatus(message telebot.Message, user User) {
 			Bot.SendMessage(message.Chat, msg, nil)
 			continue
 		}
-		msg := fmt.Sprintf("Issue #%d updated", id)
+		msg := fmt.Sprintf("Updated #%d: %s\n%s", issue.Id, issue.Subject, issueUrl(issue))
 		Bot.SendMessage(message.Chat, msg, nil)
 	}
 }
@@ -269,8 +269,7 @@ func getIssueData(user User, id int) (msg string) {
 		log.Println(err)
 		msg = fmt.Sprintf("Issue #%d: error accessing", id)
 	} else {
-		url := fmt.Sprintf("%s/issues/%d", Config.RedmineUrl, issue.Id)
-		msg = fmt.Sprintf("%s #%d: %s\n%s", issue.Tracker.Name, issue.Id, issue.Subject, url)
+		msg = fmt.Sprintf("%s #%d: %s\n%s", issue.Tracker.Name, issue.Id, issue.Subject, issueUrl(issue))
 	}
 	return
 }

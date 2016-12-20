@@ -10,6 +10,10 @@ import (
 	"github.com/mattn/go-redmine"
 )
 
+func issueUrl(issue *redmine.Issue) string {
+	return fmt.Sprintf("%s/issues/%d", Config.RedmineUrl, issue.Id)
+}
+
 func getIds(message string, pattern *regexp.Regexp) (ids []int) {
 	matches := pattern.FindAllStringSubmatch(message, -1)
 	for i := range matches {
