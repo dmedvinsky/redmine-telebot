@@ -22,9 +22,8 @@ func main() {
 	for message := range messages {
 		user := GetUser(message.Sender.ID)
 		switch {
-		case strings.HasPrefix(message.Text, "/abort"):
-			fallthrough
-		case strings.HasPrefix(message.Text, "/cancel"):
+		case strings.HasPrefix(message.Text, "/abort"),
+			strings.HasPrefix(message.Text, "/cancel"):
 			abort(message, user)
 		case strings.HasPrefix(message.Text, "/connect"):
 			connect(message, user)
@@ -32,6 +31,14 @@ func main() {
 			disconnect(message, user)
 		case strings.HasPrefix(message.Text, "/track"):
 			track0(message, user)
+		case strings.HasPrefix(message.Text, "/new"),
+			strings.HasPrefix(message.Text, "/inprogress"),
+			strings.HasPrefix(message.Text, "/review"),
+			strings.HasPrefix(message.Text, "/fixed"),
+			strings.HasPrefix(message.Text, "/closed"),
+			strings.HasPrefix(message.Text, "/reopened"),
+			strings.HasPrefix(message.Text, "/feedback"):
+			changeStatus(message, user)
 		default:
 			switch user.ChatState["state_id"] {
 			case "track.1":

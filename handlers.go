@@ -11,6 +11,9 @@ import (
 	"github.com/tucnak/telebot"
 )
 
+var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
+var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
+
 func abort(message telebot.Message, user User) {
 	user.ClearState()
 	Bot.SendMessage(message.Chat, "Cancelled current operation.",
@@ -190,9 +193,65 @@ func track5(message telebot.Message, user User) {
 	user.ClearState()
 }
 
+func changeStatus(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
+	statusMap := map[string]string{
+		"new":        "New",
+		"inprogress": "In Progress",
+		"review":     "CodeReview",
+		"fixed":      "Fixed",
+		"closed":     "Closed",
+		"reopened":   "Reopened",
+		"feedback":   "Feedback",
+	}
+	requestedStatus := statusMap[strings.Fields(message.Text)[0][1:]]
+	issueIds := getIds(message.Text, issueIdRe)
+	if issueIds == nil {
+		Bot.SendMessage(message.Chat, "Please provide at least one Issue ID", nil)
+		return
+	}
+	statuses, err := rmApi.IssueStatuses()
+	if err != nil {
+		log.Println(err)
+		Bot.SendMessage(message.Chat, "Error accessing Redmine", nil)
+		return
+	}
+	var status redmine.IssueStatus
+	for _, s := range statuses {
+		if s.Name == requestedStatus {
+			status = s
+			break
+		}
+	}
+	if status.Id == 0 {
+		Bot.SendMessage(message.Chat, "Status not found", nil)
+		return
+	}
+	for _, id := range issueIds {
+		issue, err := rmApi.Issue(id)
+		if err != nil {
+			log.Println(err)
+			msg := fmt.Sprintf("Issue #%d: error accessing", id)
+			Bot.SendMessage(message.Chat, msg, nil)
+			continue
+		}
+		issue.ProjectId = issue.Project.Id
+		issue.TrackerId = issue.Tracker.Id
+		issue.StatusId = status.Id
+		err = rmApi.UpdateIssue(*issue)
+		if err != nil {
+			log.Println(err)
+			msg := fmt.Sprintf("Issue #%d: error updating", id)
+			Bot.SendMessage(message.Chat, msg, nil)
+			continue
+		}
+		msg := fmt.Sprintf("Issue #%d updated", id)
+		Bot.SendMessage(message.Chat, msg, nil)
+	}
+}
+
 func parseMessage(message telebot.Message, user User) {
-	var issueIdRe = regexp.MustCompile(`#(?P<issue>\d+)`)
-	var issueLinkRe = regexp.MustCompile(Config.RedmineUrl + `/issues/(?P<issue>\d+)/?`)
 	var issueIds []int
 	issueIds = append(issueIds, getIds(message.Text, issueIdRe)...)
 	issueIds = append(issueIds, getIds(message.Text, issueLinkRe)...)
