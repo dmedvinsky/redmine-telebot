@@ -269,7 +269,8 @@ func getIssueData(user User, id int) (msg string) {
 		log.Println(err)
 		msg = fmt.Sprintf("Issue #%d: error accessing", id)
 	} else {
-		msg = fmt.Sprintf("%s #%d: %s\n%s", issue.Tracker.Name, issue.Id, issue.Subject, issueUrl(issue))
+		msg = fmt.Sprintf("%s #%d: %s (%s)\n%s", issue.Tracker.Name, issue.Id,
+			issue.Subject, issue.Status.Name, issueUrl(issue))
 	}
 	return
 }
