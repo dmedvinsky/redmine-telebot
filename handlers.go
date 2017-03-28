@@ -202,7 +202,7 @@ func changeStatus(message telebot.Message, user User) {
 		"review":     "CodeReview",
 		"fixed":      "Fixed",
 		"closed":     "Closed",
-		"reopened":   "Reopened",
+		"reopened":   "ReOpened",
 		"feedback":   "Feedback",
 	}
 	requestedStatus := statusMap[strings.Fields(message.Text)[0][1:]]
@@ -219,7 +219,7 @@ func changeStatus(message telebot.Message, user User) {
 	}
 	var status redmine.IssueStatus
 	for _, s := range statuses {
-		if s.Name == requestedStatus {
+		if strings.EqualFold(s.Name, requestedStatus) {
 			status = s
 			break
 		}
