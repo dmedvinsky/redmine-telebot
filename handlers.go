@@ -49,6 +49,74 @@ func disconnect(message telebot.Message, user User) {
 	Bot.SendMessage(message.Chat, msg, nil)
 }
 
+func comment0(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
+	filter := redmine.IssueFilter{
+		AssignedToId: "me",
+		StatusId:     "open",
+	}
+	issues, err := rmApi.IssuesByFilter(&filter)
+	if err != nil {
+		log.Println(err)
+	}
+	keyboard := issuesKeyboard(issues, false)
+	Bot.SendMessage(message.Chat, "Please select issue or type an ID manually.",
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				ForceReply:      true,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: true,
+				CustomKeyboard:  keyboard,
+			},
+		})
+	user.SetState("state_id", "comment.1")
+}
+
+func comment1(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	issueId := getIdFromKeyboard(message.Text)
+	user.SetState("issue_id", issueId)
+	Bot.SendMessage(message.Chat, "Please enter comment.",
+		&telebot.SendOptions{
+			ReplyTo: message,
+			ReplyMarkup: telebot.ReplyMarkup{
+				HideCustomKeyboard: true,
+			},
+		})
+	user.SetState("state_id", "comment.2")
+}
+
+func comment2(message telebot.Message, user User) {
+	Bot.SendChatAction(message.Chat, telebot.Typing)
+	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
+	issueId := user.ChatState["issue_id"].(int)
+	issue, err := rmApi.Issue(issueId)
+	if err != nil {
+		log.Println(err)
+		msg := fmt.Sprintf("Issue #%d: error accessing", issueId)
+		Bot.SendMessage(message.Chat, msg, nil)
+		user.ClearState()
+		comment0(message, user)
+	}
+	issue.ProjectId = issue.Project.Id
+	issue.TrackerId = issue.Tracker.Id
+	issue.StatusId = issue.Status.Id
+	issue.Notes = message.Text
+	err = rmApi.UpdateIssue(*issue)
+	if err != nil {
+		log.Println(err)
+		msg := fmt.Sprintf("Issue #%d: error updating", issue.Id)
+		Bot.SendMessage(message.Chat, msg, nil)
+		user.ClearState()
+		comment0(message, user)
+	}
+	msg := fmt.Sprintf("Updated #%d: %s\n%s", issue.Id, issue.Subject, issueUrl(issue))
+	Bot.SendMessage(message.Chat, msg, nil)
+	user.ClearState()
+}
+
 func track0(message telebot.Message, user User) {
 	Bot.SendChatAction(message.Chat, telebot.Typing)
 	rmApi := redmine.NewClient(Config.RedmineUrl, user.RedmineToken)
@@ -88,7 +156,7 @@ func track1(message telebot.Message, user User) {
 	if err != nil {
 		log.Println(err)
 	}
-	keyboard := issuesKeyboard(issues)
+	keyboard := issuesKeyboard(issues, true)
 	Bot.SendMessage(message.Chat, "Please select issue.",
 		&telebot.SendOptions{
 			ReplyTo: message,

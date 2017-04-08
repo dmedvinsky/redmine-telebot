@@ -50,9 +50,11 @@ func projectsKeyboard(items []redmine.Project) (keyboard [][]string) {
 	return
 }
 
-func issuesKeyboard(items []redmine.Issue) (keyboard [][]string) {
-	row := [1]string{"No Issue"}
-	keyboard = append(keyboard, row[:])
+func issuesKeyboard(items []redmine.Issue, addEmpty bool) (keyboard [][]string) {
+	if addEmpty {
+		row := [1]string{"No Issue"}
+		keyboard = append(keyboard, row[:])
+	}
 	for i := 0; i < len(items); i += 2 {
 		if i > 100 {
 			break

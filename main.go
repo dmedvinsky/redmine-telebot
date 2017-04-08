@@ -29,6 +29,8 @@ func main() {
 			connect(message, user)
 		case strings.HasPrefix(message.Text, "/disconnect"):
 			disconnect(message, user)
+		case strings.HasPrefix(message.Text, "/comment"):
+			comment0(message, user)
 		case strings.HasPrefix(message.Text, "/track"):
 			track0(message, user)
 		case strings.HasPrefix(message.Text, "/new"),
@@ -51,6 +53,10 @@ func main() {
 				track4(message, user)
 			case "track.5":
 				track5(message, user)
+			case "comment.1":
+				comment1(message, user)
+			case "comment.2":
+				comment2(message, user)
 			default:
 				parseMessage(message, user)
 			}
